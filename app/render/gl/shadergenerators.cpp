@@ -29,7 +29,8 @@ ShaderPtr ShaderGenerator::DefaultPipeline(const QString& function_name, const Q
   ShaderPtr program = std::make_shared<QOpenGLShaderProgram>();
 
   // Generate vertex shader
-  QString vert_shader = "#version 110\n"
+  QString vert_shader = "#version 150\n"
+                        "#define texture3D texture\n"
                         "\n"
                         "#ifdef GL_ES\n"
                         "precision mediump int;\n"
@@ -38,10 +39,10 @@ ShaderPtr ShaderGenerator::DefaultPipeline(const QString& function_name, const Q
                         "\n"
                         "uniform mat4 mvp_matrix;\n"
                         "\n"
-                        "attribute vec4 a_position;\n"
-                        "attribute vec2 a_texcoord;\n"
+                        "in vec4 a_position;\n"
+                        "in vec2 a_texcoord;\n"
                         "\n"
-                        "varying vec2 v_texcoord;\n"
+                        "out vec2 v_texcoord;\n"
                         "\n"
                         "void main() {\n"
                         "  gl_Position = mvp_matrix * a_position;\n"
@@ -49,18 +50,19 @@ ShaderPtr ShaderGenerator::DefaultPipeline(const QString& function_name, const Q
                         "}\n";
 
   // Generate fragment shader
-  QString frag_shader = "#version 110\n"
+  QString frag_shader = "#version 150\n"
+                        "#define texture3D texture\n"
                         "\n"
                         "#ifdef GL_ES\n"
                         "precision mediump int;\n"
                         "precision mediump float;\n"
                         "#endif\n"
                         "\n"
-                        "uniform sampler2D texture;\n"
+                        "uniform sampler2D mytexture;\n"
                         "uniform float opacity;\n"
                         "uniform bool color_only;\n"
                         "uniform vec4 color_only_color;\n"
-                        "varying vec2 v_texcoord;\n"
+                        "out vec2 v_texcoord;\n"
                         "\n";
 
   // Finish the function with the main function
@@ -71,12 +73,13 @@ ShaderPtr ShaderGenerator::DefaultPipeline(const QString& function_name, const Q
     // If not, just add a pure main() function
 
     frag_shader.append("\n"
+                       "out vec4 Out_Color;"
                        "void main() {\n"
                        "  if (color_only) {\n"
-                       "    gl_FragColor = color_only_color;"
+                       "    Out_Color = color_only_color;"
                        "  } else {\n"
-                       "    vec4 color = texture2D(texture, v_texcoord)*opacity;\n"
-                       "    gl_FragColor = color;\n"
+                       "    vec4 color = texture(mytexture, v_texcoord)*opacity;\n"
+                       "    Out_Color = color;\n"
                        "  }\n"
                        "}\n");
 
@@ -90,9 +93,10 @@ ShaderPtr ShaderGenerator::DefaultPipeline(const QString& function_name, const Q
     frag_shader.append(shader_code);
 
     frag_shader.append(QString("\n"
+                               "out vec4 Out_Color;"
                                "void main() {\n"
-                               "  vec4 color = %1(texture2D(texture, v_texcoord))*opacity;\n"
-                               "  gl_FragColor = color;\n"
+                               "  vec4 color = %1(texture(mytexture, v_texcoord))*opacity;\n"
+                               "  Out_Color = color;\n"
                                "}\n").arg(function_name));
 
   }
